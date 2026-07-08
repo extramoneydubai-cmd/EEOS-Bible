@@ -1,0 +1,491 @@
+PATCH DOC-00 — EEOS Master Index & Documentation Map
+
+IMPORTANT
+
+Documentation only.
+
+DO NOT WRITE CODE.
+
+DO NOT MODIFY DATABASE.
+
+DO NOT MODIFY SCHEMA.
+
+DO NOT MODIFY ROUTES.
+
+DO NOT CREATE TABLES.
+
+Create only:
+
+EEOS Bible/
+
+DOC-00 — EEOS Master Index & Documentation Map.md
+
+------------------------------------------------
+
+OBJECTIVE
+
+Create the official master index for the entire EEOS Bible.
+
+This document becomes the HOME PAGE of the EEOS Bible.
+
+Every future document must be referenced from here.
+
+This document serves four purposes:
+
+1. Navigation
+
+2. Project Planning
+
+3. Progress Tracking
+
+4. Development Priority
+
+Think of this as the CEO Dashboard for the documentation.
+
+------------------------------------------------
+
+DOCUMENT STRUCTURE
+
+------------------------------------------------
+
+# EEOS Bible
+
+Vision statement
+
+Purpose
+
+Scope
+
+Architecture philosophy
+
+Core principles
+
+------------------------------------------------
+
+SECTION 1
+
+Project Overview
+
+Explain what EEOS is.
+
+Target customers
+
+Schools
+
+Colleges
+
+Coaching Institutes
+
+Universities
+
+Corporate Training
+
+Enterprise Learning
+
+Mention that the platform is designed as a modular SaaS ERP.
+
+------------------------------------------------
+
+SECTION 2
+
+Current Project Status
+
+Create a progress dashboard.
+
+Example format:
+
+Architecture Documents
+
+██████░░░░
+
+60%
+
+Business Workflow Documents
+
+████░░░░░░
+
+40%
+
+Master Data Studio
+
+████████░░
+
+80%
+
+CRM
+
+██████░░░░
+
+60%
+
+Admissions
+
+███░░░░░░░
+
+30%
+
+Finance
+
+██░░░░░░░░
+
+20%
+
+HR
+
+░░░░░░░░░░
+
+0%
+
+Marketing
+
+░░░░░░░░░░
+
+0%
+
+Technology
+
+░░░░░░░░░░
+
+0%
+
+SaaS Administration
+
+░░░░░░░░░░
+
+0%
+
+------------------------------------------------
+
+SECTION 3
+
+EEOS Documentation Structure
+
+Create complete folder hierarchy.
+
+Example
+
+01 Vision
+
+02 Architecture
+
+03 Business Workflows
+
+04 Module Specifications
+
+05 UI Standards
+
+06 Database
+
+07 APIs
+
+08 Integrations
+
+09 AI
+
+10 Security
+
+11 Roadmap
+
+12 Decision Logs
+
+13 Changelog
+
+------------------------------------------------
+
+SECTION 4
+
+Architecture Documents
+
+List every Architecture document.
+
+Example
+
+ARCH-01
+
+Status
+
+Completed
+
+Purpose
+
+Link
+
+ARCH-02
+
+...
+
+ARCH-03
+
+...
+
+ARCH-04
+
+...
+
+Future
+
+ARCH-05
+
+ARCH-06
+
+ARCH-07
+
+------------------------------------------------
+
+SECTION 5
+
+Business Workflow Documents
+
+List every Business document.
+
+DOC-05
+
+Lead V2
+
+Completed
+
+DOC-06
+
+Admission
+
+Completed
+
+DOC-07
+
+Student Lifecycle
+
+Completed
+
+DOC-08
+
+Finance
+
+Completed
+
+DOC-09
+
+Communication
+
+Planned
+
+DOC-10
+
+Workflow & Automation
+
+Planned
+
+DOC-11
+
+Collections
+
+Planned
+
+DOC-12
+
+Sales
+
+Planned
+
+DOC-13
+
+Reporting
+
+Planned
+
+DOC-14
+
+AI
+
+Planned
+
+DOC-15
+
+Security
+
+Planned
+
+------------------------------------------------
+
+SECTION 6
+
+Module Documentation Roadmap
+
+CRM
+
+Admissions
+
+Students
+
+Academics
+
+Finance
+
+Collections
+
+Sales
+
+HR
+
+Marketing
+
+Operations
+
+Administration
+
+Technology
+
+SaaS Administration
+
+Parent Portal
+
+Student App
+
+Employee App
+
+AI
+
+For every module show
+
+Status
+
+Priority
+
+Dependency
+
+Documentation
+
+Implementation
+
+------------------------------------------------
+
+SECTION 7
+
+Master Data Studio Tracker
+
+List every Master.
+
+CRM Masters
+
+Organization Masters
+
+Academic Masters
+
+Finance Masters
+
+HR Masters
+
+Marketing Masters
+
+Technology Masters
+
+Administration Masters
+
+Communication Masters
+
+For every master
+
+Status
+
+Completed
+
+In Progress
+
+Pending
+
+------------------------------------------------
+
+SECTION 8
+
+Implementation Roadmap
+
+Phase 1
+
+Foundation
+
+Phase 2
+
+Core ERP
+
+Phase 3
+
+Automation
+
+Phase 4
+
+AI
+
+Phase 5
+
+Marketplace
+
+Phase 6
+
+Enterprise
+
+------------------------------------------------
+
+SECTION 9
+
+Current Development Priorities
+
+Create Top 20 priorities.
+
+Rank
+
+Task
+
+Owner
+
+Status
+
+Priority
+
+Dependency
+
+------------------------------------------------
+
+SECTION 10
+
+Documentation Standards
+
+Naming convention
+
+Folder convention
+
+Patch naming
+
+Markdown standards
+
+Architecture standards
+
+------------------------------------------------
+
+SECTION 11
+
+Golden Principles
+
+Examples
+
+Entity First
+
+Module Second
+
+Single Source of Truth
+
+No Duplicate Data
+
+Event Driven Architecture
+
+Reference Everything
+
+Never Break Existing Modules
+
+Documentation Before Development
+
+Architecture Before Coding
+
+------------------------------------------------
+
+SECTION 12
+
+EEOS Vision Roadmap
