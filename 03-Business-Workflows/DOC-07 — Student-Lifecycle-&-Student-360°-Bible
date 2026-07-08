@@ -1,0 +1,741 @@
+PATCH DOC-07 — Student Lifecycle & Student 360° Bible
+
+IMPORTANT
+
+Documentation only.
+
+DO NOT WRITE CODE.
+
+DO NOT MODIFY DATABASE.
+
+DO NOT MODIFY SCHEMA.
+
+DO NOT MODIFY ROUTES.
+
+Create only:
+
+EEOS Bible/
+
+03-Business-Workflows/
+
+DOC-07 — Student Lifecycle & Student 360° Bible.md
+
+------------------------------------------------
+
+OBJECTIVE
+
+Design the complete Student Lifecycle architecture for EEOS.
+
+This document begins AFTER Admission is completed.
+
+Student becomes the central entity for Academic, Finance, Attendance, Communication, Examination, Placement, Alumni and AI.
+
+This document defines the complete 360° Student architecture.
+
+------------------------------------------------
+
+Background
+
+Use the following documents as references:
+
+DOC-05 — Lead V2 Architecture
+
+DOC-06 — Admission & Enrollment Engine
+
+Student must NEVER duplicate:
+
+Lead
+
+Family
+
+Family Contacts
+
+Admission
+
+Documents
+
+Everything must reference existing entities.
+
+------------------------------------------------
+
+Document Sections
+
+------------------------------------------------
+
+1.
+
+Student Philosophy
+
+Purpose
+
+Student as the central operational entity.
+
+Difference between
+
+Lead
+
+Admission
+
+Student
+
+Enrollment
+
+Alumni
+
+Business Rules
+
+------------------------------------------------
+
+2.
+
+Student Lifecycle
+
+Lead
+
+↓
+
+Admission
+
+↓
+
+Student Created
+
+↓
+
+Batch Allocation
+
+↓
+
+Classes Begin
+
+↓
+
+Attendance
+
+↓
+
+Assignments
+
+↓
+
+Examinations
+
+↓
+
+Results
+
+↓
+
+Certificates
+
+↓
+
+Course Completed
+
+↓
+
+Placement
+
+↓
+
+Alumni
+
+Explain every stage.
+
+------------------------------------------------
+
+3.
+
+Student Master Entity
+
+Purpose
+
+Fields
+
+Student ID
+
+Roll Number
+
+Enrollment Number
+
+Admission Reference
+
+Lead Reference
+
+Family Reference
+
+Program
+
+Academic Session
+
+Branch
+
+Status
+
+Active
+
+Inactive
+
+Completed
+
+Dropped
+
+Suspended
+
+Transferred
+
+Graduated
+
+------------------------------------------------
+
+4.
+
+Student 360° Dashboard
+
+Design the complete Student Dashboard.
+
+Sections
+
+Overview
+
+Academics
+
+Attendance
+
+Fees
+
+Documents
+
+Communication
+
+Tasks
+
+Timeline
+
+Performance
+
+Medical
+
+Transport
+
+Hostel
+
+Library
+
+Certificates
+
+Placement
+
+AI Insights
+
+------------------------------------------------
+
+5.
+
+Academic Profile
+
+Fields
+
+Board
+
+School
+
+Current Standard
+
+Program
+
+Subjects
+
+Electives
+
+Medium
+
+Previous Qualification
+
+Academic History
+
+------------------------------------------------
+
+6.
+
+Attendance
+
+Student
+
+↓
+
+Attendance Records
+
+Features
+
+Daily
+
+Lecture-wise
+
+QR
+
+Face Recognition
+
+Manual
+
+Leave
+
+Holiday
+
+Attendance %
+
+Short Attendance Alerts
+
+Parent Notifications
+
+------------------------------------------------
+
+7.
+
+Assessment & Examination
+
+Quiz
+
+Assignment
+
+Unit Test
+
+Mock Test
+
+Mid Term
+
+Final Exam
+
+Practical
+
+Project
+
+Result
+
+Grade
+
+Rank
+
+Analytics
+
+------------------------------------------------
+
+8.
+
+Fee Relationship
+
+Student
+
+↓
+
+Finance
+
+↓
+
+Invoices
+
+↓
+
+Receipts
+
+↓
+
+Payment History
+
+↓
+
+Scholarships
+
+↓
+
+Refunds
+
+Student never stores fee information directly.
+
+------------------------------------------------
+
+9.
+
+Communication
+
+Student
+
+↓
+
+Family Contacts
+
+↓
+
+Communication Engine
+
+Examples
+
+Attendance
+
+Fees
+
+Homework
+
+Exam Schedule
+
+Holiday
+
+Emergency
+
+Marketing
+
+Certificates
+
+------------------------------------------------
+
+10.
+
+Documents
+
+Student
+
+↓
+
+Document Repository
+
+Examples
+
+ID Card
+
+Marksheet
+
+Certificates
+
+Bonafide
+
+Transfer Certificate
+
+Migration
+
+Passport
+
+Medical
+
+Consent Forms
+
+------------------------------------------------
+
+11.
+
+Medical Profile
+
+Blood Group
+
+Medical Conditions
+
+Allergies
+
+Emergency Notes
+
+Doctor
+
+Insurance
+
+Emergency Contact
+
+------------------------------------------------
+
+12.
+
+Transport
+
+Route
+
+Pickup Point
+
+Drop Point
+
+Vehicle
+
+Driver
+
+GPS
+
+Attendance Sync
+
+------------------------------------------------
+
+13.
+
+Hostel
+
+Room
+
+Building
+
+Floor
+
+Bed
+
+Roommate
+
+Mess
+
+Visitor Log
+
+------------------------------------------------
+
+14.
+
+Library
+
+Books Issued
+
+Books Returned
+
+Fines
+
+Reservations
+
+Digital Library
+
+------------------------------------------------
+
+15.
+
+Certificates
+
+Course Completion
+
+Participation
+
+Achievement
+
+Sports
+
+Internship
+
+Custom Certificates
+
+------------------------------------------------
+
+16.
+
+Placement
+
+Resume
+
+Skills
+
+Interview
+
+Company
+
+Offer
+
+Package
+
+Joining
+
+Status
+
+------------------------------------------------
+
+17.
+
+Student Timeline
+
+Every activity appears here.
+
+Examples
+
+Admission
+
+Attendance
+
+Fee
+
+Exam
+
+Homework
+
+Counselling
+
+Disciplinary
+
+Certificates
+
+Communication
+
+Tasks
+
+AI Recommendation
+
+------------------------------------------------
+
+18.
+
+Student Analytics
+
+Attendance %
+
+Academic %
+
+Fee %
+
+Behaviour Score
+
+Engagement
+
+Risk Score
+
+Progress Graph
+
+Performance Trend
+
+------------------------------------------------
+
+19.
+
+AI Opportunities
+
+Dropout Prediction
+
+Attendance Risk
+
+Low Performance Detection
+
+Personalized Learning
+
+Counselling Recommendation
+
+Fee Default Prediction
+
+Placement Prediction
+
+Career Recommendation
+
+------------------------------------------------
+
+20.
+
+Parent Portal View
+
+What parents can see
+
+Attendance
+
+Homework
+
+Fees
+
+Exams
+
+Documents
+
+Communication
+
+Transport
+
+Certificates
+
+Timetable
+
+Requests
+
+------------------------------------------------
+
+21.
+
+Student Mobile App
+
+Dashboard
+
+Attendance
+
+Homework
+
+Timetable
+
+Assignments
+
+Exams
+
+Fees
+
+Certificates
+
+Notifications
+
+Profile
+
+------------------------------------------------
+
+22.
+
+Implementation Roadmap
+
+Phase 1
+
+Student Master
+
+Phase 2
+
+Student Dashboard
+
+Phase 3
+
+Attendance
+
+Phase 4
+
+Assessment
+
+Phase 5
+
+Documents
+
+Phase 6
+
+Communication
+
+Phase 7
+
+Medical
+
+Phase 8
+
+Transport
+
+Phase 9
+
+Library
+
+Phase 10
+
+Placement
+
+------------------------------------------------
+
+23.
+
+Golden Rules
+
+Student never duplicates Lead.
+
+Student never duplicates Family.
+
+Family is shared.
+
+Finance owns payments.
+
+Academic owns learning.
+
+Communication always uses Family Contacts.
+
+Everything connected through IDs.
+
+Student is the operational center of EEOS.
+
+------------------------------------------------
+
+No code.
+
+Documentation only.
+
+Produce a detailed architecture-quality document suitable as the official EEOS Student Engine Bible.
