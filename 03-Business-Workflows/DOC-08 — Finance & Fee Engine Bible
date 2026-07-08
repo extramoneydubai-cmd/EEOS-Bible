@@ -1,0 +1,1502 @@
+DOC-08 — Finance & Fee Engine Bible
+> Status: Architecture Blueprint (Draft)
+
+> Domain: Finance & Fee Management
+
+> Owner: EEOS Architecture Team
+
+> Version: 1.0
+
+> Last Updated: 2026-07-08
+
+> Predecessor: DOC-05 — Lead V2 Architecture, DOC-06 — Admission Engine, DOC-07 — Student 360°
+
+---
+
+Table of Contents
+1. [Finance Philosophy](#1-finance-philosophy)
+
+2. [Finance Lifecycle](#2-finance-lifecycle)
+
+3. [Fee Structure Architecture](#3-fee-structure-architecture)
+
+4. [Fee Components](#4-fee-components)
+
+5. [Student Fee Plan](#5-student-fee-plan)
+
+6. [Invoice Architecture](#6-invoice-architecture)
+
+7. [Installment Engine](#7-installment-engine)
+
+8. [Receipt Engine](#8-receipt-engine)
+
+9. [Payment Modes](#9-payment-modes)
+
+10. [Scholarships](#10-scholarships)
+
+11. [Discount Engine](#11-discount-engine)
+
+12. [Waiver Engine](#12-waiver-engine)
+
+13. [Refund Engine](#13-refund-engine)
+
+14. [Collections Center Integration](#14-collections-center-integration)
+
+15. [Communication Integration](#15-communication-integration)
+
+16. [Revenue Tracking](#16-revenue-tracking)
+
+17. [Financial Reports](#17-financial-reports)
+
+18. [Finance Dashboard](#18-finance-dashboard)
+
+19. [AI Opportunities](#19-ai-opportunities)
+
+20. [Parent Portal View](#20-parent-portal-view)
+
+21. [Student App View](#21-student-app-view)
+
+22. [Implementation Roadmap](#22-implementation-roadmap)
+
+23. [Golden Rules](#23-golden-rules)
+
+---
+
+1. Finance Philosophy
+Purpose
+The Finance & Fee Engine is the single source of truth for all monetary transactions in EEOS. It owns, tracks, and reports every rupee that flows through the system — from fee setup to receipt generation to refund processing.
+
+Core Principle
+Finance owns money. No other module touches financial data.
+
+| Module | Relationship with Finance |
+
+|--------|--------------------------|
+
+| Admission Engine | Checks payment status (Paid/Partial/Pending) — never stores amounts |
+
+| Student Management | Displays fee information via queries — never stores financial records |
+
+| Collections Center | Creates collection actions, sends follow-ups — never stores money |
+
+| Communication | Delivers fee reminders using Family Contacts — never stores payment data |
+
+| CRM (Lead V2) | Tracks expected revenue, discounts approved — actual payments in Finance |
+
+Business Rules
+1. Finance owns all payment records. No other module creates, modifies, or stores financial data.
+
+2. Invoices generate receipts. Receipts never modify invoices — they are additive records.
+
+3. One invoice can have multiple receipts. Partial payments are tracked against a single invoice.
+
+4. Discounts and waivers require approval. No financial adjustment happens without an audit trail.
+
+5. Refunds are separate from payments. A refund is a distinct financial transaction, not a negative payment.
+
+6. Scholarships are applied at the Finance level. Not as discounts on individual invoices.
+
+7. Payment plans are templates, not contracts. They generate installments which flexibility to adjust.
+
+8. All financial records are immutable once verified. Edits create audit trails, not overwrites.
+
+9. Fee structure is program + session + branch specific. Each combination has its own fee definition.
+
+10. Financial reporting is real-time. All dashboards query live data — no batch processing.
+
+Financial Ownership Map
+┌─────────────────────────────────────────────────────────────┐
+│                    FINANCE MODULE                             │
+│                                                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
+│  │Fee       │  │ Invoices │  │ Receipts │  │ Installments│  │
+│  │Structure │  │          │  │          │  │             │  │
+│  └──────────┘  └──────────┘  └──────────┘  └────────────┘  │
+│                                                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
+│  │Scholarsh.│  │ Discount │  │ Waivers  │  │  Refunds   │  │
+│  │          │  │          │  │          │  │             │  │
+│  └──────────┘  └──────────┘  └──────────┘  └────────────┘  │
+│                                                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────┐  │
+│  │PDC       │  │Payment   │  │Collect.  │  │ Financial  │  │
+│  │Cheques   │  │Plans     │  │Metrics   │  │ Reports    │  │
+│  └──────────┘  └──────────┘  └──────────┘  └────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+        │              │              │              │
+        ▼              ▼              ▼              ▼
+┌──────────┐   ┌──────────┐   ┌──────────┐   ┌────────────┐
+│Admission │   │ Student  │   │Collect.  │   │ Communic.  │
+│(Read     │   │(Read     │   │(Actions) │   │(Delivery)  │
+│ Only)    │   │ Only)    │   │          │   │            │
+└──────────┘   └──────────┘   └──────────┘   └────────────┘
+---
+
+2. Finance Lifecycle
+The complete financial journey of a student from lead to alumni.
+
+Lifecycle Map
+Lead Stage (CRM)
+  │
+  ├── Expected Revenue (estimate)
+  ├── Fee Discussion (counselling)
+  ├── Discount Requested (approval)
+  │
+  ▼
+Admission Stage (Engine)
+  │
+  ├── Fee Plan Assigned (program-based)
+  ├── Invoice Generated (admission)
+  ├── Payment Collected (partial/full)
+  ├── Receipt Generated
+  │
+  ▼
+Student Stage (Active)
+  │
+  ├── Fee Plan Finalized (per session)
+  ├── Installments Generated
+  ├── Invoices Issued (periodic)
+  ├── Payments Collected
+  ├── Receipts Generated
+  ├── Reminders Sent (auto)
+  │
+  ├── [Optional] Discount Applied
+  ├── [Optional] Scholarship Applied
+  ├── [Optional] Waiver Approved
+  │
+  ├── [Optional] PDC Cheque Deposited/Cleared/Bounced
+  ├── [Optional] Payment Plan Modified
+  │
+  ├── Overdue Tracking
+  ├── Collection Follow-up
+  │
+  ▼
+Course Completion
+  │
+  ├── Final Settlement
+  ├── [Optional] Refund Processed
+  │
+  ▼
+Closure / Alumni
+  │
+  └── Financial Record Archived
+---
+
+3. Fee Structure Architecture
+Purpose
+The Fee Structure is a master template that defines the total fee for a specific program, session, and branch combination. It is the source of truth for what a student should pay.
+
+Fee Structure Master Fields
+| Field | Type | Purpose |
+
+|-------|------|---------|
+
+| feePlanName | string | Name (e.g., "JEE Foundation 2026-27 Standard") |
+
+| programId | id(academicPrograms) | Target program |
+
+| sessionId | id(academicSessions) | Target session |
+
+| branchId | id(orgBranches) | Target branch |
+
+| currency | string | INR / USD / etc. |
+
+| validFrom | number | Start of validity |
+
+| validTo | number | End of validity |
+
+| description | optional(string) | Notes about the plan |
+
+| status | string | Active / Draft / Archived |
+
+| totalFee | number | Computed sum of all components |
+
+| createdBy | id(users) | Creator |
+
+| createdAt | number | Timestamp |
+
+| updatedAt | number | Timestamp |
+
+Fee Structure Example
+Fee Plan: JEE Foundation 2026-27 (Andheri Centre)
+═══════════════════════════════════════════════════════
+Program: JEE Foundation
+Session: 2026-27
+Branch: Andheri (Mumbai)
+Status: ✅ Active
+═══════════════════════════════════════════════════════
+Component                     │ Amount    │ Type     │ Taxable
+───────────────────────────────────────────────────────
+Admission Fee (One-time)      │ ₹5,000    │ Fixed    │ No
+Tuition Fee (Annual)          │ ₹35,000   │ Fixed    │ Yes (18%)
+Material Fee                  │ ₹3,000    │ Fixed    │ No
+Exam Fee                      │ ₹2,000    │ Fixed    │ No
+Library Fee                   │ ₹1,000    │ Fixed    │ No
+Activity Fee                  │ ₹1,000    │ Fixed    │ No
+───────────────────────────────────────────────────────
+Base Total                    │ ₹47,000   │          │
+GST @ 18% on Tuition          │ ₹6,300    │          │
+───────────────────────────────────────────────────────
+TOTAL FEE                     │ ₹53,300   │          │
+═══════════════════════════════════════════════════════
+Fee Structure by Program
+┌─────────────────────────────────────────────────────────────┐
+│  Fee Structure Matrix                                        │
+├──────────────┬────────────┬──────────┬──────────┬───────────┤
+│ Program      │ Session    │ Branch   │ Total    │ Status    │
+├──────────────┼────────────┼──────────┼──────────┼───────────┤
+│ JEE Found.   │ 2026-27    │ Andheri  │ ₹53,300  │ ✅ Active │
+│ JEE Found.   │ 2026-27    │ Borivali │ ₹51,000  │ ✅ Active │
+│ JEE Found.   │ 2026-27    │ Online   │ ₹35,000  │ ✅ Active │
+│ NEET Found.  │ 2026-27    │ Andheri  │ ₹55,000  │ ✅ Active │
+│ NEET Found.  │ 2026-27    │ Borivali │ ₹52,000  │ ✅ Active │
+│ CBSE 9       │ 2026-27    │ Andheri  │ ₹28,000  │ ✅ Active │
+│ CBSE 10      │ 2026-27    │ Andheri  │ ₹30,000  │ ✅ Active │
+└──────────────┴────────────┴──────────┴──────────┴───────────┘
+Indexes
+by_programId_sessionId — Primary lookup
+by_branchId — Branch-specific plans
+by_status — Active/draft/archived filtering
+Design Rules
+Fee structure is program + session + branch specific — each combination gets its own plan
+Total fee is auto-computed from components — never entered manually
+A fee structure can be cloned to create variants with minor adjustments
+Changes to fee structure do NOT affect already-assigned student fee plans
+---
+
+4. Fee Components
+Purpose
+Reusable building blocks that make up a fee structure. Components can be mixed, matched, and re-used across different fee plans.
+
+Fee Component Fields
+| Field | Type | Purpose |
+
+|-------|------|---------|
+
+| name | string | Component name (e.g., "Tuition Fee") |
+
+| code | string | Short code (e.g., "TUITION") |
+
+| componentType | string | Admission / Tuition / Material / Exam / Transport / Hostel / Library / Activity / Other |
+
+| isMandatory | boolean | Must be included in every fee plan |
+
+| isOptional | boolean | Can be opted in/out |
+
+| isTaxable | boolean | Subject to GST/tax |
+
+| taxRate | optional(number) | Tax percentage (e.g., 18) |
+
+| isRefundable | boolean | Refundable if student withdraws |
+
+| amountType | string | Fixed / Variable / Percentage |
+
+| defaultAmount | number | Default value (if fixed) |
+
+| frequency | string | OneTime / Annual / Monthly / PerExam |
+
+| description | optional(string) | Notes |
+
+| isActive | boolean | Available for use |
+
+| createdAt | number | Timestamp |
+
+Default Fee Components
+| Code | Name | Type | Mandatory | Taxable | Refundable |
+
+|------|------|------|-----------|---------|------------|
+
+| ADMISSION | Admission Fee | Admission | Yes | No | No |
+
+| TUITION | Tuition Fee | Tuition | Yes | Yes | No |
+
+| MATERIAL | Material Fee | Material | Yes | No | Yes |
+
+| EXAM | Exam Fee | Exam | Yes | No | No |
+
+| TRANSPORT | Transport Fee | Transport | No | No | Yes |
+
+| HOSTEL | Hostel Fee | Hostel | No | No | Yes |
+
+| LIBRARY | Library Fee | Library | No | No | No |
+
+| ACTIVITY | Activity Fee | Activity | No | No | No |
+
+| LAB | Lab Fee | Other | No | No | No |
+
+| UNIFORM | Uniform Fee | Other | No | No | Yes |
+
+| CAUTION | Caution Deposit | Other | No | No | Yes |
+
+Fee Component Assignment to Fee Structure
+Fee Structure: JEE Foundation 2026-27 (Andheri)
+
+Components:
+  ├── Admission Fee      ₹5,000   [Fixed] [One-time] [Mandatory]
+  ├── Tuition Fee        ₹35,000  [Fixed] [Annual]   [Mandatory] [18% GST]
+  ├── Material Fee       ₹3,000   [Fixed] [Annual]   [Mandatory]
+  ├── Exam Fee           ₹2,000   [Fixed] [Annual]   [Mandatory]
+  ├── Library Fee        ₹1,000   [Fixed] [Annual]   [Optional]
+  ├── Activity Fee       ₹1,000   [Fixed] [Annual]   [Optional]
+  └── Transport Fee      ₹8,000   [Fixed] [Annual]   [Optional]
+---
+
+5. Student Fee Plan
+Purpose
+When a student is admitted, a fee plan is assigned based on the fee structure template. This creates a frozen copy of the fee structure for that specific student, which can then be customized with installments, discounts, etc.
+
+Assignment Flow
+Lead Admitted
+         │
+         ▼
+System identifies fee structure:
+  Program = JEE Foundation
+  Session = 2026-27
+  Branch  = Andheri
+         │
+         ▼
+Student Fee Plan created (copy of structure):
+  ┌─────────────────────────────────────────────┐
+  │  Student: Raj Patel                         │
+  │  Plan: JEE Foundation 2026-27 Standard       │
+  │  Total: ₹53,300                              │
+  │                                              │
+  │  Components (frozen from template):          │
+  │   ├── Admission Fee    ₹5,000  [Included]   │
+  │   ├── Tuition Fee      ₹35,000 [Included]   │
+  │   ├── Material Fee     ₹3,000  [Included]   │
+  │   ├── Exam Fee         ₹2,000  [Included]   │
+  │   ├── Library Fee      ₹1,000  [Opted Out]  │
+  │   └── Transport Fee    ₹8,000  [Included]   │
+  │                                              │
+  │  Optional toggles adjusted by counsellor     │
+  └─────────────────────────────────────────────┘
+         │
+         ▼
+Installments generated (See Section 7)
+         │
+         ▼
+Invoices issued per installment
+Student Fee Plan Fields
+| Field | Type | Purpose |
+
+|-------|------|---------|
+
+| studentId | id(students) | Student reference |
+
+| feeStructureId | id(feeStructures) | Source fee structure |
+
+| admissionId | id(admissions) | Admission reference |
+
+| totalFee | number | Total after component adjustments |
+
+| discountAmount | number | Total discount applied |
+
+| scholarshipAmount | number | Total scholarship applied |
+
+| waiverAmount | number | Total waiver applied |
+
+| netPayable | number | Total − Discount − Scholarship − Waiver |
+
+| installmentCount | number | Number of installments |
+
+| status | string | Active / Completed / Cancelled |
+
+| createdAt | number | Timestamp |
+
+| updatedAt | number | Timestamp |
+
+---
+
+6. Invoice Architecture
+Purpose
+Invoices are the official demand for payment. They are generated from the student fee plan and can be issued for the full amount or per installment.
+
+Invoice Fields
+| Field | Type | Purpose |
+
+|-------|------|---------|
+
+| invoiceNumber | string | Auto-generated unique number (EEOS-INV-2026-XXXX) |
+
+| studentId | id(students) | Student reference |
+
+| admissionId | id(admissions) | Admission reference |
+
+| feePlanId | id(studentFeePlans) | Fee plan reference |
+
+| installmentId | optional(id(paymentInstallments)) | Linked installment (if per-installment) |
+
+| sessionId | id(academicSessions) | Session reference |
+
+| branchId | id(orgBranches) | Branch reference |
+
+| issueDate | number | Date issued |
+
+| dueDate | number | Payment due date |
+
+| totalAmount | number | Total invoice amount |
+
+| amountPaid | number | Sum of verified receipts against this invoice |
+
+| balanceDue | number | Total − Paid |
+
+| status | string | Draft / Issued / PartiallyPaid / Paid / Overdue / Cancelled |
+
+| lineItems | string | JSON array of fee components |
+
+| notes | optional(string) | Invoice notes |
+
+| generatedBy | id(users) | Who generated |
+
+| createdAt | number | Timestamp |
+
+| updatedAt | number | Timestamp |
+
+Invoice Number Format
+EEOS-INV-YYYY-XXXX
+
+Example: EEOS-INV-2026-0042
+Invoice Status Lifecycle
+Draft ──► Issued ──► PartiallyPaid ──► Paid
+                    │                    │
+                    └──► Overdue         │
+                                        │
+                              Cancelled (before payment)
+Invoice Example
+╔═══════════════════════════════════════════════════════╗
+║                 TAX INVOICE                            ║
+║                                                        ║
+║  EEOS Institute                                   ║
+║  Andheri (West), Mumbai - 400053                       ║
+║  GSTIN: 27ABCDE1234F1Z5                               ║
+║                                                        ║
+║  Invoice No: EEOS-INV-2026-0042                        ║
+║  Date: 01-Aug-2026                                     ║
+║  Due Date: 15-Aug-2026                                 ║
+║                                                        ║
+║  Student: Raj Patel                                    ║
+║  Program: JEE Foundation (2026-27)                     ║
+║  Batch: Morning A                                      ║
+║                                                        ║
+║  ┌──────────────────────────────────────────────┐      ║
+║  │ # │ Description         │ Amount   │ Tax     │      ║
+║  ├──────────────────────────────────────────────┤      ║
+║  │ 1 │ Admission Fee       │ ₹5,000   │ —       │      ║
+║  │ 2 │ Tuition Fee         │ ₹35,000  │ ₹6,300  │      ║
+║  │ 3 │ Material Fee        │ ₹3,000   │ —       │      ║
+║  │ 4 │ Exam Fee            │ ₹2,000   │ —       │      ║
+║  │ 5 │ Transport Fee       │ ₹8,000   │ —       │      ║
+║  ├──────────────────────────────────────────────┤      ║
+║  │    Total                │ ₹53,000  │ ₹6,300  │      ║
+║  │    Grand Total          │ ₹59,300           │      ║
+║  └──────────────────────────────────────────────┘      ║
+║                                                        ║
+║  Status: Issued                                         ║
+║  Payment: Pay via UPI / Bank Transfer / Cash            ║
+║                                                        ║
+╚═══════════════════════════════════════════════════════╝
+Invoice Generation Triggers
+| Trigger | When | Invoice Type |
+
+|---------|------|-------------|
+
+| Admission Approved | Student created | Admission invoice |
+
+| Installment Due | Per installment schedule | Installment invoice |
+
+| Manual | Finance team action | Custom invoice |
+
+| Reissue | Correction needed | Replacement invoice |
+
+---
+
+7. Installment Engine
+Purpose
+Automatically split a fee plan into manageable installments with configurable frequency, due dates, and grace periods.
+
+Existing Implementation (Collection Engine)
+The current system (collectionEngine.ts, payment_plans, payment_installments tables) already implements basic installment functionality. The DOC-08 architecture extends it with full invoicing integration.
+
+Installment Fields
+| Field | Type | Purpose |
+
+|-------|------|---------|
+
+| studentFeePlanId | id(studentFeePlans) | Parent fee plan |
+
+| installmentNumber | number | Sequence (1-based) |
+
+| amount | number | Installment amount |
+
+| dueDate | number | Payment due date |
+
+| graceDays | number | Days after due before overdue |
+
+| status | string | Planned / Due / Paid / PartiallyPaid / Overdue / Waived / Cancelled |
+
+| paymentId | optional(id(payments)) | Linked payment (when paid) |
+
+| paidAt | optional(number) | When paid |
+
+| invoiceId | optional(id(invoices)) | Linked invoice |
+
+| reminderSentAt | optional(number) | Last reminder sent |
+
+| createdAt | number | Timestamp |
+
+| updatedAt | number | Timestamp |
+
+Installment Generation Strategies
+| Strategy | Description | Use Case |
+
+|----------|-------------|----------|
+
+| Equal Split | Total ÷ Count | Standard plans |
+
+| Front-loaded | 50% first, rest equal | High initial cost programs |
+
+| Custom | Manual per-installment amounts | Negotiated plans |
+
+| Event-based | Tied to exam/milestone dates | Test series fees |
+
+Installment Schedule Example
+Student: Raj Patel — JEE Foundation
+Total Fee: ₹53,300
+Plan: 5 Monthly Installments
+
+#  │ Due Date    │ Amount  │ Status
+───┼─────────────┼─────────┼──────────
+ 1  │ 01-Aug-2026 │ ₹10,660 │ ✅ Paid
+ 2  │ 01-Sep-2026 │ ₹10,660 │ ✅ Paid
+ 3  │ 01-Oct-2026 │ ₹10,660 │ ⏳ Due
+ 4  │ 01-Nov-2026 │ ₹10,660 │ 🔮 Planned
+ 5  │ 01-Dec-2026 │ ₹10,660 │ 🔮 Planned
+───┼─────────────┼─────────┼──────────
+    │ Total       │ ₹53,300 │
+Auto-Reminder Schedule
+| Days Before Due | Action |
+
+|----------------|--------|
+
+| T-7 | Send reminder: "Installment due in 7 days" |
+
+| T-3 | Send reminder: "Installment due in 3 days" |
+
+| T-1 | Send reminder: "Installment due tomorrow" |
+
+| T+0 | Mark status as "Due" |
+
+| T+1 to T+grace | Status remains "Due" |
+
+| T+grace+1 | Mark as "Overdue", trigger collection |
+
+---
+
+8. Receipt Engine
+Purpose
+Receipts are proof of payment. Every payment received generates a receipt. One invoice can have multiple receipts (partial payments).
+
+Receipt Fields
+| Field | Type | Purpose |
+
+|-------|------|---------|
+
+| receiptNumber | string | Auto-generated unique number (EEOS-RCP-2026-XXXX) |
+
+| invoiceId | id(invoices) | Invoice this payment is for |
+
+| studentId | id(students) | Student reference |
+
+| paymentId | id(leadPayments) | Source payment record |
+
+| amount | number | Amount received |
+
+| mode | string | Cash / UPI / Bank Transfer / Card / Cheque / Online |
+
+| referenceNumber | optional(string) | Transaction ID / UTR / Cheque number |
+
+| receivedDate | number | Date payment received |
+
+| collectedBy | id(users) | Who collected the payment |
+
+| verifiedBy | optional(id(users)) | Who verified |
+
+| verifiedAt | optional(number) | Verification timestamp |
+
+| notes | optional(string) | Receipt notes |
+
+| downloadUrl | optional(string) | PDF receipt URL |
+
+| createdAt | number | Timestamp |
+
+Receipt Number Format
+EEOS-RCP-YYYY-XXXX
+
+Example: EEOS-RCP-2026-0042
+Receipt Example
+╔═══════════════════════════════════════════════════════╗
+║              PAYMENT RECEIPT                           ║
+║                                                        ║
+║  EEOS Institute                                   ║
+║                                                        ║
+║  Receipt No: EEOS-RCP-2026-0042                        ║
+║  Date: 05-Aug-2026                                     ║
+║                                                        ║
+║  Received from: Raj Patel                              ║
+║  Program: JEE Foundation (2026-27)                     ║
+║                                                        ║
+║  ┌──────────────────────────────────────────────┐      ║
+║  │ Invoice No             │ Amount   │ Balance   │      ║
+║  ├──────────────────────────────────────────────┤      ║
+║  │ EEOS-INV-2026-0042     │ ₹10,660  │ ₹42,640   │      ║
+║  └──────────────────────────────────────────────┘      ║
+║                                                        ║
+║  Payment Mode: UPI                                     ║
+║  Reference: UPI-1234567890                             ║
+║  Amount: ₹10,660                                       ║
+║                                                        ║
+║  Status: ✅ Verified                                    ║
+║  Verified By: Accounts Dept                            ║
+║                                                        ║
+║  This is a computer-generated receipt.                 ║
+╚═══════════════════════════════════════════════════════╝
+Receipt-Invoice Relationship
+Invoice (EEOS-INV-2026-0042)
+  Total: ₹59,300
+  Status: PartiallyPaid
+     │
+     ├── Receipt #1: ₹10,660 (05-Aug-2026) → UPI
+     ├── Receipt #2: ₹10,660 (01-Sep-2026) → Cash
+     ├── Receipt #3: ₹10,660 (03-Oct-2026) → Bank Transfer
+     ├── Receipt #4: ₹10,660 (01-Nov-2026) → Card
+     └── Receipt #5: ₹16,660 (01-Dec-2026) → Online → Status: Paid
+---
+
+9. Payment Modes
+Supported Payment Modes
+| Mode | Type | Settlement Time | Fee | Verification |
+
+|------|------|----------------|-----|-------------|
+
+| Cash | Offline | Instant | None | Manual |
+
+| UPI | Online | Instant | 0-2% | Auto (UPI ID) |
+
+| Bank Transfer | Online | 0-2 days | None | Manual (UTR) |
+
+| Card (POS) | Offline | Instant | 1-3% | Manual |
+
+| Card (Online) | Online | Instant | 1-3% | Auto |
+
+| Cheque | Offline | 2-3 days | None | Manual + Clearance |
+
+| Online Gateway | Online | Instant | 2-5% | Auto |
+
+| Wallet | Online | Instant | 1-2% | Auto |
+
+| Corporate Sponsorship | Offline | Varies | None | Manual + Approval |
+
+| Scholarship Direct | Offline | Varies | None | Manual + Approval |
+
+Payment Reconciliation Flow
+Payment Received
+       │
+       ▼
+┌───────────────────────────────────────┐
+│  Payment Mode Determines Workflow     │
+│                                       │
+│  ┌───────────┐      ┌─────────────┐  │
+│  │ Cash/Cheque│      │ UPI/Card/   │  │
+│  │ (Manual)  │      │ Online (Auto)│  │
+│  └─────┬─────┘      └──────┬──────┘  │
+│        │                   │         │
+│        ▼                   ▼         │
+│  Status: Pending       Status: Pending│
+│        │                   │         │
+│        ▼                   ▼         │
+│  Finance Team          Auto-Verify  │
+│  Reviews Payment       with Gateway │
+│        │                   │         │
+│        ▼                   ▼         │
+│  ┌─────────────────────────────┐     │
+│  │  Verification Decision       │     │
+│  │  ├── Verified → Receipt Gen │     │
+│  │  ├── Rejected → Refund      │     │
+│  │  └── Pending → Follow-up    │     │
+│  └─────────────────────────────┘     │
+└───────────────────────────────────────┘
+Cheque/PDC Lifecycle
+Cheque Received (PDC Created)
+       │
+       ▼
+Status: Scheduled
+       │
+       ▼ (On Due Date or Before)
+Deposited in Bank
+       │
+       ▼
+Status: Deposited
+       │
+       ├── Clear → Status: Cleared → Payment Verified
+       │
+       └── Bounce → Status: Bounced → Collection Follow-up
+                    │
+                    ├── Re-deposit (new date)
+                    ├── Alternative payment requested
+                    └── Legal follow-up (if repeated)
+---
+
+10. Scholarships
+Purpose
+Scholarships are official reductions in fee liability based on merit, need, or other criteria. They are applied at the Finance level and require formal approval.
+
+Scholarship Fields
+| Field | Type | Purpose |
+
+|-------|------|---------|
+
+| scholarshipName | string | Name (e.g., "Merit Scholarship 2026") |
+
+| scholarshipType | string | Merit / NeedBased / Sports / Corporate / Staff |
+
+| studentId | id(students) | Student reference |
+
+| amount | number | Amount or percentage value |
+
+| amountType | string | Fixed / Percentage |
+
+| maxAmount | optional(number) | Cap if percentage-based |
+
+| approvedBy | id(users) | Approver |
+
+| approvedAt | number | Approval date |
+
+| validFrom | number | Start of validity |
+
+| validTo | number | End of validity (can be session-linked) |
+
+| status | string | Draft / Pending / Approved / Rejected / Expired |
+
+| remarks | optional(string) | Approval notes |
+
+| createdAt | number | Timestamp |
+
+| updatedAt | number | Timestamp |
+
+Scholarship Types
+| Type | Description | Criteria | Max |
+
+|------|-------------|----------|-----|
+
+| Merit Scholarship | Academic performance | 85%+ in previous exam | 50% of tuition |
+
+| Need-based Scholarship | Financial need | Family income < ₹5L/year | 75% of total |
+
+| Sports Scholarship | Sports achievement | National/State level | 100% of tuition |
+
+| Corporate Scholarship | Employee child | Company sponsorship | 100% of total |
+
+| Staff Scholarship | Staff child | Employee verification | 50% of total |
+
+Approval Workflow
+Counsellor Recommends Scholarship
+         │
+         ▼
+Documents Submitted (Income proof, marksheet, etc.)
+         │
+         ▼
+Verification Team Validates
+         │
+         ├── Valid → Forward to Scholarship Committee
+         │
+         └── Invalid → Rejected (with reason)
+                    │
+                    └── Resubmit
+         │
+         ▼
+Scholarship Committee Approves/Rejects
+         │
+         ├── Approved → Applied to Fee Plan
+         │
+         └── Rejected → Counsellor notified
+---
+
+11. Discount Engine
+Purpose
+Discounts are short-term reductions in fee liability for specific promotions or circumstances.
+
+Existing Implementation
+The current system (crmDiscounts.ts, leadDiscounts table) already handles discount creation, approval workflow, and recalculation of payable amounts.
+
+Discount Types
+| Type | Description | Approval Level |
+
+|------|-------------|----------------|
+
+| Early Bird | Paid before deadline | Manager |
+
+| Sibling | Sibling already enrolled | Manager |
+
+| Referral | Referred by existing student | Manager |
+
+| Promotional | Campaign-specific | Admin |
+
+| Management | Management discretion | Director |
+
+| Custom | Negotiated by counsellor | Admin |
+
+| Group | Bulk enrollment discount | Director |
+
+Discount Fields
+| Field | Type | Purpose |
+
+|-------|------|---------|
+
+| studentId | id(students) | Student reference |
+
+| category | string | scholarship / discount / waiver / adjustment |
+
+| reason | string | Why the discount was given |
+
+| amount | number | Discount amount |
+
+| percentage | optional(number) | If percentage-based |
+
+| standardAmount | optional(number) | Fee before discount |
+
+| status | string | Draft / Pending / Approved / Rejected / Cancelled |
+
+| approvalRequestId | optional(id(approvalRequests)) | Approval workflow reference |
+
+| requestedBy | id(users) | Who requested |
+
+| approvedBy | optional(id(users)) | Who approved |
+
+| approvedAt | optional(number) | Approval timestamp |
+
+| remarks | optional(string) | Approval notes |
+
+| createdAt | number | Timestamp |
+
+Discount Rules Matrix
+| Discount Type | Stackable | Percentage Cap | Requires Proof |
+
+|--------------|-----------|----------------|----------------|
+
+| Early Bird | No | 10% | No (auto) |
+
+| Sibling | Yes | 15% | Yes (sibling ID) |
+
+| Referral | Yes | 5% | Yes (referral code) |
+
+| Promotional | No | 25% | No (campaign) |
+
+| Management | Yes | 50% | Yes (approval) |
+
+| Custom | Yes | 100% | Yes (reason) |
+
+---
+
+12. Waiver Engine
+Purpose
+Waivers are full or partial cancellation of fee liability, typically for special circumstances.
+
+Waiver Types
+| Type | Description | Max Amount | Approval |
+
+|------|-------------|------------|----------|
+
+| Full Waiver | 100% fee waived | Total fee | Director |
+
+| Partial Waiver | Percentage waived | 50% of total | Admin |
+
+| Emergency Waiver | Medical/family emergency | 75% of total | Director |
+
+| Management Waiver | Management decision | 100% of total | Board |
+
+| Adjustment | Correction of billing error | As needed | Admin |
+
+Waiver Approval Flow
+Waiver Request Submitted
+         │
+         ▼
+Supporting Documents Uploaded
+         │
+         ▼
+┌─────────────────────────────────────┐
+│  Amount Check                        │
+│                                      │
+│  Amount <= ₹10,000 → Admin          │
+│  Amount <= ₹50,000 → Director       │
+│  Amount > ₹50,000  → Board          │
+└─────────────────────────────────────┘
+         │
+         ▼
+Approval Decision
+         │
+         ├── Approved → Applied to student fee plan
+         │
+         ├── Rejected → Counsellor + Student notified
+         │
+         └── Returned → More info requested
+---
+
+13. Refund Engine
+Purpose
+Manage refund requests, approvals, and processing.
+
+Refund Triggers
+| Trigger | Description | Refundable Amount |
+
+|---------|-------------|-------------------|
+
+| Admission Cancellation | Student never started | Full minus processing fee |
+
+| Course Withdrawal | Student left mid-course | Pro-rata basis |
+
+| Duplicate Payment | Paid twice | Full duplicate amount |
+
+| Excess Payment | Paid more than due | Excess amount |
+
+| Scholarship Adjustment | Scholarship applied after payment | Adjusted amount |
+
+Refund Lifecycle
+Refund Requested
+       │
+       ▼
+Documents Verified (original receipt, reason proof)
+       │
+       ▼
+Approval (based on amount)
+       │
+       ├── Amount ≤ ₹10,000 → Manager
+       ├── Amount ≤ ₹50,000 → Admin
+       └── Amount > ₹50,000 → Director
+       │
+       ▼
+Processed (finance team initiates transfer)
+       │
+       ▼
+Completed (refund confirmed)
+Refund Processing Timeline
+| Refund Amount | Processing Time | Approval Level |
+
+|--------------|----------------|----------------|
+
+| ≤ ₹5,000 | 3 business days | Auto-approved |
+
+| ≤ ₹25,000 | 5 business days | Manager |
+
+| ≤ ₹1,00,000 | 7 business days | Admin |
+
+| > ₹1,00,000 | 10 business days | Director |
+
+---
+
+14. Collections Center Integration
+Relationship Model
+Finance (Owns Data)
+  │
+  ├── Invoice: ₹59,300 (Issued)
+  ├── Payment: ₹10,660 (Partial)
+  ├── Balance: ₹48,640 (Due)
+  │
+  ▼
+Collections (Owns Actions)
+  │
+  ├── Day 1: Send reminder (Communication)
+  ├── Day 7: Create follow-up task (Tasks)
+  ├── Day 15: Counsellor call (Call Log)
+  ├── Day 30: Escalation notice
+  ├── Day 45: Legal notice
+  └── Day 60: Handover to recovery agency
+Existing Implementation
+The current system (collectionEngine.ts) already implements:
+
+Payment Plans — Full CRUD with auto-installment generation
+Installments — Status tracking (planned/due/paid/overdue/cancelled)
+PDC Cheques — Full lifecycle (scheduled/deposited/cleared/bounced)
+Payment Commitments — Counsellor-tracked promises with confidence levels
+Overdue Automation — Auto-marks overdue installments, sends notifications
+Collection Summary — Per-lead collection health snapshot
+Organization Dashboard — Org-wide collection metrics
+---
+
+15. Communication Integration
+All fee-related communication uses the Family Contacts architecture from DOC-05.
+
+Fee Communication Templates
+| Event | Template | Channel | Recipient Role |
+
+|-------|----------|---------|----------------|
+
+| Invoice Issued | invoice_issued | WhatsApp | Primary Fee Contact |
+
+| Payment Due (T-7) | payment_reminder_7d | WhatsApp | Primary Fee Contact |
+
+| Payment Due (T-3) | payment_reminder_3d | WhatsApp | Primary Fee Contact |
+
+| Payment Due (T-1) | payment_reminder_1d | WhatsApp/SMS | Primary Fee Contact |
+
+| Payment Overdue | payment_overdue | WhatsApp | Fee Contact + Decision Maker |
+
+| Payment Received | payment_receipt | WhatsApp | Primary Fee Contact |
+
+| Installment Paid | installment_confirmed | WhatsApp | Primary Fee Contact |
+
+| Receipt Available | receipt_ready | WhatsApp/Email | Primary Fee Contact |
+
+| Refund Initiated | refund_initiated | WhatsApp | Primary Fee Contact |
+
+| Refund Completed | refund_completed | WhatsApp | Primary Fee Contact |
+
+| Cheque Bounced | cheque_bounced | WhatsApp/SMS | Primary Fee Contact |
+
+| Scholarship Approved | scholarship_approved | WhatsApp | Primary Decision Maker |
+
+| Discount Approved | discount_approved | WhatsApp | Primary Decision Maker |
+
+Example: Payment Due Reminder
+To: +91-9876543210
+Contact: Sunita Patel (Mother)
+Role: ⭐ Primary Fee Contact
+Template: payment_reminder_3d
+
+"Dear Sunita Patel,
+
+This is a reminder that Raj Patel's
+Installment #3 of ₹10,660 is due in 3 days
+(Due Date: 01-Oct-2026).
+
+Pay now: [Payment Link]
+
+Outstanding Balance: ₹31,980
+
+Thank you,
+EEOS Institute"
+---
+
+16. Revenue Tracking
+Revenue Dimensions
+| Dimension | Granularity | Purpose |
+
+|-----------|-------------|---------|
+
+| Branch | Per branch | Branch-level P&L |
+
+| Program | Per program | Program profitability |
+
+| Session | Per session | Year-over-year comparison |
+
+| Counsellor | Per counsellor | Individual performance |
+
+| Campaign | Per campaign | Marketing ROI |
+
+| Lead Source | Per source | Channel effectiveness |
+
+| Batch | Per batch | Batch-level revenue |
+
+| Faculty | Per faculty | Faculty value attribution |
+
+| Payment Mode | Per mode | Payment preference trends |
+
+Revenue by Branch
+┌──────────────┬──────────┬──────────┬──────────┬──────────┐
+│ Branch       │ Revenue  │ Collected│ Pending  │ Growth   │
+├──────────────┼──────────┼──────────┼──────────┼──────────┤
+│ Andheri      │ ₹12.5L   │ ₹8.2L    │ ₹4.3L    │ 📈 +15%  │
+│ Borivali     │ ₹8.3L    │ ₹5.1L    │ ₹3.2L    │ 📈 +22%  │
+│ Vashi        │ ₹4.1L    │ ₹2.8L    │ ₹1.3L    │ 📊 Same  │
+│ Online       │ ₹6.7L    │ ₹5.9L    │ ₹0.8L    │ 📈 +45%  │
+└──────────────┴──────────┴──────────┴──────────┴──────────┘
+---
+
+17. Financial Reports
+| Report | Purpose | Frequency | Audience |
+
+|--------|---------|-----------|----------|
+
+| Outstanding Report | All unpaid invoices | Daily | Collections |
+
+| Collection Report | Payments collected | Daily | Finance |
+
+| Revenue Report | Revenue by dimension | Weekly | Management |
+
+| Scholarship Report | Scholarships awarded | Monthly | Admin |
+
+| Discount Report | Discounts approved | Monthly | Admin |
+
+| Refund Report | Refunds processed | Monthly | Finance |
+
+| Waiver Report | Waivers approved | Monthly | Admin |
+
+| Cash Flow Report | Money in/out | Weekly | Management |
+
+| Branch P&L | Branch profitability | Monthly | Directors |
+
+| Aged Receivables | Overdue by age | Weekly | Collections |
+
+Outstanding Report
+OUTSTANDING REPORT — EEOS Institute
+Date: 15-Oct-2026
+═══════════════════════════════════════════════════════
+Total Outstanding: ₹4,85,000
+Total Students: 127
+───────────────────────────────────────────────────────
+
+AGE ANALYSIS:
+  0-30 days:     ₹2,10,000  (43%) — 52 students
+  31-60 days:    ₹1,55,000  (32%) — 28 students
+  61-90 days:    ₹85,000    (18%) — 12 students
+  90+ days:      ₹35,000    (7%)  — 5 students
+
+COLLECTION EFFICIENCY: 72%
+---
+
+18. Finance Dashboard
+Dashboard KPIs
+┌──────────────────────────────────────────────────────────┐
+│  FINANCE DASHBOARD                                         │
+├──────────────────────────────────────────────────────────┤
+│                                                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │ 💰 Collected  │  │ 📋 Outstanding│  │ ⚠️ Overdue   │   │
+│  │   Today       │  │              │  │               │   │
+│  │   ₹1,25,000   │  │   ₹4,85,000  │  │   ₹2,75,000   │   │
+│  │   📈 +12%     │  │   📊 -5%     │  │   📈 +8%      │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘   │
+│                                                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │ 📊 Monthly   │  │ 📈 Projected │  │ 🔄 Collection│   │
+│  │   Revenue    │  │   Revenue    │  │   Efficiency  │   │
+│  │   ₹18.5L     │  │   ₹22.3L    │  │   72%         │   │
+│  │   📈 +22%    │  │   On Track  │  │   📊 -3%      │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘   │
+│                                                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │ 🏆 Scholarship│  │ 💸 Refunds   │  │ 📉 Bounce  │   │
+│  │   Granted    │  │   Processed  │  │   Rate       │   │
+│  │   ₹45,000    │  │   ₹25,000   │  │   3.2%       │   │
+│  │   📊 Same    │  │   📈 +50%   │  │   📉 -1%     │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘   │
+└──────────────────────────────────────────────────────────┘
+---
+
+19. AI Opportunities
+1. Fee Default Prediction
+Student: Vikram Joshi — NEET Foundation
+
+AI Default Risk Score: 68% (High)
+
+Risk Factors:
+  ❌ Payment history: 2 late payments in last 6 months
+  ❌ Family income bracket: ₹3-4L/year
+  ❌ No scholarship applied
+  ❌ Primary fee contact not responsive
+  ⚠️ Outstanding balance: ₹45,000 (65 days overdue)
+
+Prediction: 72% probability of 30+ day default on next installment
+
+Recommendation:
+  ➤ Offer restructuring of payment plan
+  ➤ Assign dedicated collection officer
+  ➤ Consider partial waiver for immediate payment
+2. Collection Priority Score
+  🥇 Vikram Joshi    Score: 92  — Overdue ₹45,000 / 65 days
+  🥈 Amit Singh      Score: 78  — Overdue ₹38,000 / 42 days
+  🥉 Priya Sharma    Score: 65  — Overdue ₹25,000 / 28 days
+
+Priority Score Formula:
+  Overdue Amount (40%) + Days Overdue (30%) +
+  Past Payment Behavior (20%) + Response Rate (10%)
+3. Scholarship Recommendation
+Student: Priya Sharma — NEET Foundation
+Academic: 92% in Class 10
+Family Income: ₹3.5L/year
+
+AI Suggests:
+  🏆 Merit Scholarship — 25% fee waiver
+      → Score qualifies (85%+ threshold)
+      → Recommended: Yes
+
+  🏆 Need-based Scholarship — 30% fee waiver
+      → Income qualifies (< ₹5L threshold)
+      → Recommended: Yes
+
+  Combined: Up to 55% fee reduction
+  Total Savings: ₹32,500/year
+4. Payment Pattern Analysis
+Student: Raj Patel — JEE Foundation
+
+AI Payment Pattern Analysis:
+  Preferred mode: UPI (80% of payments)
+  Preferred time: 1st-5th of month (early payer)
+  Response to reminders: Immediate (within 2 hours)
+
+Assessment: Low-touch collection — auto-reminders sufficient
+5. Revenue Forecasting
+AI Revenue Forecast — Next 90 Days
+═══════════════════════════════════════════════════════
+
+Expected Collections:
+  ┌─────────────────────┬──────────┬──────────┐
+  │ Period              │ Forecast  │ Confidence│
+  ├─────────────────────┼──────────┼──────────┤
+  │ This Month          │ ₹18.5L   │ High (92%)│
+  │ Next Month          │ ₹16.2L   │ Med (78%) │
+  │ Next Quarter        │ ₹45L     │ Low (55%) │
+  └─────────────────────┴──────────┴──────────┘
+---
+
+20. Parent Portal View
+💰 Fees — Raj Patel
+═══════════════════════════════════════════════════════
+Total Fee: ₹59,300
+Paid: ₹21,320 (36%)
+Balance: ₹37,980
+Status: ⏳ Partial
+
+Next Due:
+  Installment #3 — ₹10,660
+  Due Date: 01-Nov-2026
+  Pay Now: [Payment Link]
+
+───────────────────────────────────────────────────────
+INVOICES
+Invoice No       │ Amount │ Paid  │ Status
+───────────────────────────────────────────────────────
+INV-2026-0042    │ ₹59,300│₹21,320│ ⏳ Partially Paid
+───────────────────────────────────────────────────────
+
+RECEIPTS
+Receipt No       │ Amount │ Mode  │ Date
+───────────────────────────────────────────────────────
+RCP-2026-0042    │ ₹10,660│ UPI   │ 05-Aug-2026  [PDF]
+RCP-2026-0043    │ ₹10,660│ Cash  │ 01-Sep-2026  [PDF]
+───────────────────────────────────────────────────────
+
+PAYMENT HISTORY
+Date       │ Amount │ Mode   │ Status
+───────────────────────────────────────────────────────
+05-Aug-26  │ ₹10,660│ UPI    │ ✅ Verified
+01-Sep-26  │ ₹10,660│ Cash   │ ✅ Verified
+───────────────────────────────────────────────────────
+
+UPCOMING
+Date       │ Amount │ Description
+───────────────────────────────────────────────────────
+01-Nov-26  │ ₹10,660│ Installment #3
+01-Dec-26  │ ₹10,660│ Installment #4
+01-Jan-27  │ ₹16,660│ Installment #5 (Final)
+───────────────────────────────────────────────────────
+---
+
+21. Student App View
+💰 My Fees
+
+  Total Fee:     ₹59,300
+  Paid:          ₹21,320
+  Outstanding:   ₹37,980
+
+  [Pay Now]  [View Details]
+
+───────────────────────────────────────
+Installments
+
+  #1  Aug  ₹10,660  ✅ Paid
+  #2  Sep  ₹10,660  ✅ Paid
+  #3  Nov  ₹10,660  ⏳ Due (01-Nov)
+  #4  Dec  ₹10,660  🔮 Planned
+  #5  Jan  ₹16,660  🔮 Planned
+
+───────────────────────────────────────
+Recent Receipts
+
+  ₹10,660 via UPI — 05-Aug-2026 [PDF]
+  ₹10,660 via Cash — 01-Sep-2026 [PDF]
+---
+
+22. Implementation Roadmap
+| Phase | Description | Priority | Effort | Depends On |
+
+|-------|-------------|----------|--------|------------|
+
+| 1 | Fee Structure Master | P0 | 4d | Academic Programs, Sessions, Branches |
+
+| 2 | Invoice Engine | P0 | 5d | Phase 1, Student Master |
+
+| 3 | Receipt Engine | P0 | 4d | Phase 2 |
+
+| 4 | Student Fee Plan | P1 | 4d | Phase 1, Student Master |
+
+| 5 | Installment Engine | P1 | 4d | Phase 4 |
+
+| 6 | Scholarship Engine | P1 | 4d | Phase 1 |
+
+| 7 | Discount & Waiver | P1 | 4d | Phase 4 |
+
+| 8 | Refund Engine | P2 | 5d | Phase 2, 3 |
+
+| 9 | PDC Enhancement | P2 | 3d | Existing Collection Engine |
+
+| 10 | Collections Integration | P2 | 4d | Phase 2, 5 |
+
+| 11 | Communication Integration | P2 | 4d | Phase 2, 5, Lead V2 |
+
+| 12 | Financial Reports | P2 | 5d | All Phases |
+
+| 13 | Finance Dashboard | P2 | 5d | All Phases |
+
+| 14 | AI Features | P3 | 12d | All Phases |
+
+---
+
+23. Golden Rules
+╔══════════════════════════════════════════════════════════════╗
+║              FINANCE & FEE ENGINE GOLDEN RULES                ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║  1.  Finance owns ALL money data.                             ║
+║      └── No other module creates, modifies, or stores        ║
+║      financial records.                                      ║
+║                                                              ║
+║  2.  Admission NEVER stores payments.                         ║
+║      └── Admission Engine only checks payment status.         ║
+║                                                              ║
+║  3.  Student NEVER stores fee data.                           ║
+║      └── Student only displays fee status via queries.        ║
+║                                                              ║
+║  4.  Collections owns follow-up, not money.                   ║
+║      └── Collections creates actions, tasks, calls —          ║
+║      never financial records.                                 ║
+║                                                              ║
+║  5.  Communication owns delivery, not data.                   ║
+║      └── All fee communication uses Family Contacts.          ║
+║                                                              ║
+║  6.  Invoices generate receipts.                              ║
+║      └── Receipts never modify invoices — they are            ║
+║      additive records.                                       ║
+║                                                              ║
+║  7.  Receipts are immutable.                                  ║
+║      └── Corrections require reversal + new receipt.          ║
+║                                                              ║
+║  8.  Discounts and waivers require approval.                  ║
+║      └── No financial adjustment without audit trail.         ║
+║                                                              ║
+║  9.  Scholarships stack with discounts.                       ║
+║      └── Both can apply, but total cannot exceed 100%.        ║
+║                                                              ║
+║ 10.  Refunds are separate from payments.                      ║
+║      └── A refund is a distinct transaction, not negative     ║
+║      payment.                                                ║
+║                                                              ║
+║ 11.  Everything linked through IDs.                           ║
+║      └── studentId, invoiceId, receiptId — no data            ║
+║      duplication.                                            ║
+║                                                              ║
+║ 12.  Only one source of truth for financial reporting.        ║
+║      └── All reports query Finance tables — no cached         ║
+║      or duplicated data.                                     ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+---
+
+Appendix A: Entity Summary
+| Entity | Table Name | Status | Phase | Module |
+
+|--------|-----------|--------|-------|--------|
+
+| Fee Structure | feeStructures | 🔶 New | Phase 1 | Finance |
+
+| Fee Component | feeComponents | 🔶 New | Phase 1 | Finance |
+
+| Fee Structure Component | feeStructureComponents | 🔶 New | Phase 1 | Finance |
+
+| Student Fee Plan | studentFeePlans | 🔶 New | Phase 4 | Finance |
+
+| Student Fee Plan Component | studentFeePlanComponents | 🔶 New | Phase 4 | Finance |
+
+| Invoice | invoices | 🔶 New | Phase 2 | Finance |
+
+| Receipt | receipts | 🔶 New | Phase 3 | Finance |
+
+| Payment (Lead) | leadPayments | ✅ Existing | N/A | CRM/Finance |
+
+| Payment Plan | payment_plans | ✅ Existing | N/A | Collection |
+
+| Installment | payment_installments | ✅ Existing | Phase 5 | Collection/Finance |
+
+| PDC Cheque | payment_pdcs | ✅ Existing | Phase 9 | Collection |
+
+| Payment Commitment | payment_commitments | ✅ Existing | N/A | Collection |
+
+| Discount | leadDiscounts | ✅ Existing | Phase 7 | CRM/Finance |
+
+| Scholarship | scholarships | 🔶 New | Phase 6 | Finance |
+
+| Waiver | waivers | 🔶 New | Phase 7 | Finance |
+
+| Refund | refunds | 🔶 New | Phase 8 | Finance |
+
+---
+
+Appendix B: Financial Data Flow
+Fee Structure (Template)
+       │
+       ▼
+Student Fee Plan (Snapshot)
+       │
+       ├── Discount Applied (with approval)
+       ├── Scholarship Applied (with approval)
+       ├── Waiver Applied (with approval)
+       │
+       ▼
+Net Payable Calculated
+       │
+       ▼
+Installments Generated (with due dates)
+       │
+       ▼
+Invoice Issued (per installment or lump sum)
+       │
+       ▼
+Payment Received
+       │
+       ├── Auto-Verified (UPI/Card/Online)
+       └── Manual-Verified (Cash/Cheque/Bank Transfer)
+       │
+       ▼
+Receipt Generated
+       │
+       ├── Invoice Balance Updated
+       ├── Student Fee Plan Updated
+       └── Timeline Updated
+       │
+       ▼
+       [If overdue → Collection Action → Communication]
+       │
+       ▼
+       [If refund → Refund Request → Approval → Processing]
+---
+
+Appendix C: Integration Points
+| Integration | Direction | Data |
+
+|-------------|-----------|------|
+
+| Admission → Finance | Write: invoice requested, Read: payment status | Lead ID, Program, Branch |
+
+| Student → Finance | Read: fee display only | Student ID |
+
+| Collections → Finance | Read: invoice/payment data, Write: collection actions | Lead ID |
+
+| Communication → Finance | Read: invoice/payment data for templates | Invoice details |
+
+| Parent Portal → Finance | Read: fee data, Write: payment initiation | Student ID |
+
+| Student App → Finance | Read: fee summary, Write: payment initiation | Student ID |
+
+---
+
+*End of DOC-08 — Finance & Fee Engine Bible*
